@@ -10,16 +10,24 @@ def sim(rlist, clist, hbuf, total, sel_func, logfile):
     rlist_norm = [1.0*r/rsum for r in rlist] # normalized injection rate list
     cost = 0
     with open(logfile+".csv", "a+") as f:
+        f.write(str(total - total_left) +  ", "+ str(cost) + ", " + "-1" + ", " +  "-1" + "\n")
+        output_str = "{},{},{},{},{}\n".format(
+            str(total - total_left),
+            str(cost),
+            -1,
+            -1,
+            -1)
+        f.write(output_str)
+
         while (total_left > hbuf_left):
 
-            f.write(str(total - total_left) +  ", "+ str(cost) + "\n")
+#            f.write(str(total - total_left) +  ", "+ str(cost) + "\n")
         #        print cost, total - total_left
             slist_new = [1.0* hbuf_left *  r for r in rlist_norm]
             slist = map(sum, zip(slist, slist_new))
             total_left -= hbuf_left
 
             cand_idx = sel_func(rlist_norm, slist, clist)
-            f.write(str(total - total_left) +  ", "+ str(cost) + "\n")
             if (cand_idx == -1): # clean all space
                 hbuf_left = hbuf
                 slist = [0 for r in rlist] # reset slist
@@ -27,10 +35,17 @@ def sim(rlist, clist, hbuf, total, sel_func, logfile):
                 continue
 
             hbuf_left = slist[cand_idx]
-            slist[cand_idx] = 0
-
             cost+=clist[cand_idx] # costlist
+#            f.write(str(total - total_left) +  ", "+ str(cost) + ", " + str(cand_idx) + ", " +  str(clist[cand_idx]) + ", " + str(slist[cand_idx]) +  "\n")
+            output_str = "{},{},{},{},{}\n".format(
+                str(total - total_left),
+                str(cost),
+                str(cand_idx),
+                str(clist[cand_idx]),
+                str(slist[cand_idx]))
+            f.write(output_str)
 
+            slist[cand_idx] = 0
     return cost
 
 class SelPolicy:
@@ -77,13 +92,13 @@ class SelPolicy:
 if __name__ == "__main__":
 #    rlist = [1,2,3,4,5,6,7,8,9,10,11,12,13]
     rlist = [10.0, 90.0] # injection rate list
-    clist = [0.9, 0.1] # cost list
+    clist = [0.1, 0.9] # cost list
     hbuf = 100
-    total = 1000000
+    total = 10000
     sp = SelPolicy()
     print "rlist =",rlist, "clist =", clist, "hbuf =", hbuf, "total =",total
     print "greedy space", sim(rlist, clist, hbuf, total, sp.sel_greedy_space, "space_2")
     print "greedy ampli", sim(rlist, clist, hbuf, total, sp.sel_greedy_amp, "ampli_2")
-    print "      random", sim(rlist, clist,  hbuf, total, sp.sel_rand, "randm_2")
-    print "         all", sim(rlist, clist,  hbuf, total, sp.sel_all, "all")
-    print "          rr", sim(rlist, clist,  hbuf, total, sp.sel_rr, "rr")
+#    print "      random", sim(rlist, clist,  hbuf, total, sp.sel_rand, "randm")
+#    print "         all", sim(rlist, clist,  hbuf, total, sp.sel_all, "all")
+#    print "          rr", sim(rlist, clist,  hbuf, total, sp.sel_rr, "rr")
