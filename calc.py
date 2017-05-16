@@ -2,32 +2,31 @@
 
 import random
 
-def sim(rlist, clist, hbuf, total, sel_func, logfile):
+def sim(rlist, clist, hbuf, total, sel_policy, sel_func_str, logfile_suffix):
     hbuf_left = hbuf
     total_left = total
     slist = [0 for r in rlist] # space list
     rsum = sum(rlist)
     rlist_norm = [1.0*r/rsum for r in rlist] # normalized injection rate list
     cost = 0
-    with open(logfile+".csv", "a+") as f:
-        f.write(str(total - total_left) +  ", "+ str(cost) + ", " + "-1" + ", " +  "-1" + "\n")
-        output_str = "{},{},{},{},{}\n".format(
-            str(total - total_left),
-            str(cost),
+    with open(sel_func_str+logfile_suffix+".csv", "w+") as f:
+        format_str = "{:10.2f},{:8.2f},{:3},{:8.2f},{:8.2f}\n"
+        output_str = format_str.format(
+            total - total_left,
+            cost,
             -1,
             -1,
             -1)
         f.write(output_str)
 
         while (total_left > hbuf_left):
-
-#            f.write(str(total - total_left) +  ", "+ str(cost) + "\n")
-        #        print cost, total - total_left
             slist_new = [1.0* hbuf_left *  r for r in rlist_norm]
             slist = map(sum, zip(slist, slist_new))
             total_left -= hbuf_left
 
+            sel_func = sel_policy.policy_dict[sel_func_str]
             cand_idx = sel_func(rlist_norm, slist, clist)
+
             if (cand_idx == -1): # clean all space
                 hbuf_left = hbuf
                 slist = [0 for r in rlist] # reset slist
@@ -36,21 +35,31 @@ def sim(rlist, clist, hbuf, total, sel_func, logfile):
 
             hbuf_left = slist[cand_idx]
             cost+=clist[cand_idx] # costlist
-#            f.write(str(total - total_left) +  ", "+ str(cost) + ", " + str(cand_idx) + ", " +  str(clist[cand_idx]) + ", " + str(slist[cand_idx]) +  "\n")
-            output_str = "{},{},{},{},{}\n".format(
-                str(total - total_left),
-                str(cost),
-                str(cand_idx),
-                str(clist[cand_idx]),
-                str(slist[cand_idx]))
+
+            output_str = format_str.format(
+                total - total_left,
+                cost,
+                cand_idx,
+                clist[cand_idx],
+                slist[cand_idx])
             f.write(output_str)
 
             slist[cand_idx] = 0
+    print "{:>6}:{:10.1f}".format(sel_func_str, cost)
     return cost
 
 class SelPolicy:
     last = -1
     quiet = True
+    policy_dict = dict()
+    def __init__(self, q):
+        self.quiet = q
+        self.policy_dict['space'] = self.sel_greedy_space
+        self.policy_dict['ampli'] = self.sel_greedy_amp
+        self.policy_dict['rand'] = self.sel_rand
+        self.policy_dict['all'] = self.sel_all
+        self.policy_dict['rr'] = self.sel_rr
+
     def sel_greedy_space(self, rlist, slist, clist):
         val, idx = max((val, idx) for (idx, val) in enumerate(slist))
         self.prn_sel("sel_space", idx, rlist[idx], slist[idx], clist[idx])
@@ -92,13 +101,17 @@ class SelPolicy:
 if __name__ == "__main__":
 #    rlist = [1,2,3,4,5,6,7,8,9,10,11,12,13]
     rlist = [10.0, 90.0] # injection rate list
-    clist = [0.1, 0.9] # cost list
+#    suffix = "_1"
+#    clist = [0.1, 0.9] # cost list
+    suffix = "_2"
+    clist = [0.9, 0.1] # cost list
     hbuf = 100
     total = 10000
-    sp = SelPolicy()
+    sp = SelPolicy(True)
     print "rlist =",rlist, "clist =", clist, "hbuf =", hbuf, "total =",total
-    print "greedy space", sim(rlist, clist, hbuf, total, sp.sel_greedy_space, "space_2")
-    print "greedy ampli", sim(rlist, clist, hbuf, total, sp.sel_greedy_amp, "ampli_2")
-#    print "      random", sim(rlist, clist,  hbuf, total, sp.sel_rand, "randm")
-#    print "         all", sim(rlist, clist,  hbuf, total, sp.sel_all, "all")
-#    print "          rr", sim(rlist, clist,  hbuf, total, sp.sel_rr, "rr")
+
+    sim(rlist, clist, hbuf, total, sp, "space", suffix)
+    sim(rlist, clist, hbuf, total, sp, "ampli", suffix)
+    sim(rlist, clist, hbuf, total, sp, "rand", suffix)
+    sim(rlist, clist, hbuf, total, sp, "all", suffix)
+    sim(rlist, clist, hbuf, total, sp, "rr", suffix)
