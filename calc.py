@@ -9,11 +9,13 @@ def sim(rlist, clist, hbuf, total, sel_policy, sel_func_str, logfile_suffix):
     rsum = sum(rlist)
     rlist_norm = [1.0*r/rsum for r in rlist] # normalized injection rate list
     cost = 0
+    reclaim_accu = 0
     with open(sel_func_str+logfile_suffix+".csv", "w+") as f:
-        format_str = "{:10.2f},{:8.2f},{:3},{:8.2f},{:8.2f}\n"
+        format_str = "{:10.2f},{:8.2f},{:8.2f},{:3},{:8.2f},{:8.2f}\n"
         output_str = format_str.format(
             total - total_left,
             cost,
+            reclaim_accu,
             -1,
             -1,
             -1)
@@ -34,11 +36,13 @@ def sim(rlist, clist, hbuf, total, sel_policy, sel_func_str, logfile_suffix):
                 continue
 
             hbuf_left = slist[cand_idx]
-            cost+=clist[cand_idx] # costlist
+            cost += clist[cand_idx] # costlist
+            reclaim_accu += slist[cand_idx]
 
             output_str = format_str.format(
                 total - total_left,
                 cost,
+                reclaim_accu,
                 cand_idx,
                 clist[cand_idx],
                 slist[cand_idx])
@@ -56,6 +60,8 @@ class SelPolicy:
         self.quiet = q
         self.policy_dict['space'] = self.sel_greedy_space
         self.policy_dict['ampli'] = self.sel_greedy_amp
+        self.policy_dict['hybrid'] = self.sel_greedy_hybrid
+        self.policy_dict['adapt'] = self.sel_greedy_adaptive
         self.policy_dict['rand'] = self.sel_rand
         self.policy_dict['all'] = self.sel_all
         self.policy_dict['rr'] = self.sel_rr
@@ -68,6 +74,20 @@ class SelPolicy:
 
     def sel_greedy_amp(self, rlist, slist, clist):
         val, idx = max((val/clist[idx], idx) for (idx, val) in enumerate(slist))
+        self.prn_sel("sel_ampli", idx, rlist[idx], slist[idx], clist[idx])
+        self.last = idx
+        return idx
+
+    def sel_greedy_hybrid(self, rlist, slist, clist):
+        clist_alt = [2.3333,1]
+        val, idx = max((val/clist_alt[idx], idx) for (idx, val) in enumerate(slist))
+        self.prn_sel("sel_ampli", idx, rlist[idx], slist[idx], clist[idx])
+        self.last = idx
+        return idx
+
+    def sel_greedy_adaptive(self, rlist, slist, clist):
+        clist_alt = [2.3333,1]
+        val, idx = max((val/clist_alt[idx], idx) for (idx, val) in enumerate(slist))
         self.prn_sel("sel_ampli", idx, rlist[idx], slist[idx], clist[idx])
         self.last = idx
         return idx
@@ -100,18 +120,19 @@ class SelPolicy:
 
 if __name__ == "__main__":
 #    rlist = [1,2,3,4,5,6,7,8,9,10,11,12,13]
-    rlist = [10.0, 90.0] # injection rate list
-#    suffix = "_1"
-#    clist = [0.1, 0.9] # cost list
-    suffix = "_2"
-    clist = [0.9, 0.1] # cost list
+    rlist = [10.0, 20.0, 40.0, 80.0] # injection rate list
+#    suffix = "_1_20"
+#    clist = [0.1, 2] # cost list
+    suffix = "_3"
+    clist = [0.9, 0.5, 0.7, 0.9] # cost list
     hbuf = 100
-    total = 10000
+    total = 100000
     sp = SelPolicy(True)
     print "rlist =",rlist, "clist =", clist, "hbuf =", hbuf, "total =",total
 
     sim(rlist, clist, hbuf, total, sp, "space", suffix)
     sim(rlist, clist, hbuf, total, sp, "ampli", suffix)
+#    sim(rlist, clist, hbuf, total, sp, "hybrid", suffix)
     sim(rlist, clist, hbuf, total, sp, "rand", suffix)
     sim(rlist, clist, hbuf, total, sp, "all", suffix)
     sim(rlist, clist, hbuf, total, sp, "rr", suffix)
