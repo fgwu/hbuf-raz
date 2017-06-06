@@ -59,6 +59,7 @@ class SelPolicy:
     def __init__(self, q):
         self.quiet = q
         self.policy_dict['space'] = self.sel_greedy_space
+        self.policy_dict['inject'] = self.sel_greedy_inject
         self.policy_dict['ampli'] = self.sel_greedy_amp
         self.policy_dict['hybrid'] = self.sel_greedy_hybrid
         self.policy_dict['adapt'] = self.sel_greedy_adaptive
@@ -69,6 +70,12 @@ class SelPolicy:
     def sel_greedy_space(self, rlist, slist, clist):
         val, idx = max((val, idx) for (idx, val) in enumerate(slist))
         self.prn_sel("sel_space", idx, rlist[idx], slist[idx], clist[idx])
+        self.last = idx
+        return idx
+
+    def sel_greedy_inject(self, rlist, slist, clist):
+        val, idx = max((val/rlist[idx], idx) for (idx, val) in enumerate(slist))
+        self.prn_sel("sel_injct", idx, rlist[idx], slist[idx], clist[idx])
         self.last = idx
         return idx
 
@@ -85,6 +92,7 @@ class SelPolicy:
         self.last = idx
         return idx
 
+#  not finished
     def sel_greedy_adaptive(self, rlist, slist, clist):
         clist_alt = [2.3333,1]
         val, idx = max((val/clist_alt[idx], idx) for (idx, val) in enumerate(slist))
@@ -120,17 +128,18 @@ class SelPolicy:
 
 if __name__ == "__main__":
 #    rlist = [1,2,3,4,5,6,7,8,9,10,11,12,13]
-    rlist = [10.0, 20.0, 40.0, 80.0] # injection rate list
-#    suffix = "_1_20"
-#    clist = [0.1, 2] # cost list
-    suffix = "_3"
-    clist = [0.9, 0.5, 0.7, 0.9] # cost list
+    rlist = [20.0, 80.0] # injection rate list
+    suffix = "_1_20"
+    clist = [0.1, 0.9] # cost list
+#    suffix = "_3"
+#    clist = [0.9, 0.5, 0.7, 0.9] # cost list
     hbuf = 100
-    total = 100000
+    total = 1000000
     sp = SelPolicy(True)
     print "rlist =",rlist, "clist =", clist, "hbuf =", hbuf, "total =",total
 
     sim(rlist, clist, hbuf, total, sp, "space", suffix)
+    sim(rlist, clist, hbuf, total, sp, "inject", suffix)
     sim(rlist, clist, hbuf, total, sp, "ampli", suffix)
 #    sim(rlist, clist, hbuf, total, sp, "hybrid", suffix)
     sim(rlist, clist, hbuf, total, sp, "rand", suffix)
