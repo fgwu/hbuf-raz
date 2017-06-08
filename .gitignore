@@ -1,2 +1,5 @@
 *.csv
 *~
+*.eps
+*.fig
+*.png

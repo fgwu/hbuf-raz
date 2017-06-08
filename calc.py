@@ -33,6 +33,15 @@ def sim(rlist, clist, hbuf, total, sel_policy, sel_func_str, logfile_suffix):
                 hbuf_left = hbuf
                 slist = [0 for r in rlist] # reset slist
                 cost += sum(clist)
+                reclaim_accu += hbuf
+                output_str = format_str.format(
+                    total - total_left,
+                    cost,
+                    reclaim_accu,
+                    -1,
+                    -1,
+                    -1)
+                f.write(output_str)
                 continue
 
             hbuf_left = slist[cand_idx]
@@ -129,8 +138,8 @@ class SelPolicy:
 if __name__ == "__main__":
 #    rlist = [1,2,3,4,5,6,7,8,9,10,11,12,13]
     rlist = [20.0, 80.0] # injection rate list
-    suffix = "_1_20"
-    clist = [0.1, 0.9] # cost list
+    suffix = "_2"
+    clist = [0.9, 0.5] # cost list
 #    suffix = "_3"
 #    clist = [0.9, 0.5, 0.7, 0.9] # cost list
     hbuf = 100
